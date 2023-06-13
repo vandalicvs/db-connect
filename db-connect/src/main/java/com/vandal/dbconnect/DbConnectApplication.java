@@ -49,4 +49,14 @@ public class DbConnectApplication {
 		productDAO.deleteNotForSaleProducts();
 		return ResponseEntity.ok("Not-for-sale products deleted.");
 	}
+
+	@GetMapping("/{partNumber}")
+	public ResponseEntity<Product> getProductById(@PathVariable int partNumber) {
+		Product product = productDAO.loadProductById(partNumber);
+		if (product != null) {
+			return ResponseEntity.ok(product);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
 }

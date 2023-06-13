@@ -1,7 +1,5 @@
 package com.vandal.dbconnect.stuff;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
@@ -12,14 +10,11 @@ import java.util.List;
 public class ProductDAO {
     private static final String INSERT_PRODUCT_SQL = "INSERT INTO products (partNumber, name, description, isForSale, price) VALUES (?, ?, ?, ?, ?)";
     private static final String SELECT_ALL_PRODUCTS_SQL = "SELECT * FROM products";
+    private static final String SELECT_PRODUCT_SQL_BY_ID = "SELECT * FROM products WHERE partNumber = ?";
     private static final String UPDATE_PRIZE = "UPDATE products SET price = ? WHERE productId = ?";
     private static final String DELETE_NOT_FOR_SALE = "DELETE FROM products WHERE isForSale = 0";
 
-    private final ObjectMapper objectMapper;
 
-    public ProductDAO(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
     public void saveProduct(Product product) {
         try (Connection connection = DatabaseConnector.getConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_PRODUCT_SQL)) {
@@ -72,6 +67,31 @@ public class ProductDAO {
         } catch (SQLException e) {
             System.out.println("Error updating product price: " + e.getMessage());
         }
+    }
+
+    public Product loadProductById(int partNumber) {
+        try (Connection connection = DatabaseConnector.getConnection();
+             PreparedStatement statement = connection.prepareStatement(SELECT_PRODUCT_SQL_BY_ID)) {
+            statement.setInt(1, partNumber);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    int retrievedPartNumber = resultSet.getInt("partNumber");
+                    String name = resultSet.getString("name");
+                    String description = resultSet.getString("description");
+                    boolean isForSale = resultSet.getBoolean("isForSale");
+                    double price = resultSet.getDouble("price");
+
+                    return new Product(retrievedPartNumber, name, description, isForSale, price);
+                } else {
+                    System.out.println("No product found with the given ID.");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving product: " + e.getMessage());
+        }
+
+        return null;
     }
 
     public void deleteNotForSaleProducts() {
